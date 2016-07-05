@@ -6,4 +6,6 @@ package com.example.chienhua.chatroom;
 public class DataStruct {
     public String name;
     public String message;
+    public String messagePhoto;
+    public String userPhoto;
 }
