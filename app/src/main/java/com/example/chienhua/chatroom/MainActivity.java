@@ -2,23 +2,23 @@ package com.example.chienhua.chatroom;
 
 import android.app.Activity;
 import android.content.Intent;
-import android.database.Cursor;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.net.Uri;
 import android.os.AsyncTask;
 import android.os.Bundle;
-import android.provider.MediaStore;
 import android.support.annotation.NonNull;
 import android.util.Log;
+import android.view.MotionEvent;
 import android.view.View;
-import android.widget.ArrayAdapter;
+import android.view.ViewConfiguration;
+import android.view.ViewGroup;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ImageView;
+import android.widget.LinearLayout;
 import android.widget.ListView;
 import android.widget.TextView;
-
 
 import com.google.android.gms.tasks.OnFailureListener;
 import com.google.android.gms.tasks.OnSuccessListener;
@@ -33,7 +33,6 @@ import com.google.firebase.storage.FirebaseStorage;
 import com.google.firebase.storage.StorageReference;
 import com.google.firebase.storage.UploadTask;
 
-import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.HttpURLConnection;
@@ -55,14 +54,57 @@ public class MainActivity extends Activity {
     private String userID;
     private StorageReference myStorageRef;
     private ImageView imageView;
+    private LinearLayout mTabLayout;
+    private LinearLayout mTabLayoutB;
     private String photoLink = "";
     private ChatRoomAdapter chatRoomAdapter;
     private ArrayList<DataStruct> dataStruct = new ArrayList<DataStruct>();
+    int[] mTabOrigionLocation = new int[4];
+    private ListView list;
+    private LinearLayout listViewHeight;
+    private LinearLayout listViewBottom;
+    private int[] listViewLocation = new int[4];
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+        textView = (TextView) findViewById(R.id.editText);
+        editText2 = (EditText) findViewById(R.id.editText2);
+        list = (ListView) findViewById(R.id.listView);
+        button = (Button) findViewById(R.id.button2);
+        button1 = (Button) findViewById(R.id.button3);
+        button2 = (Button) findViewById(R.id.button4);
+        button3 = (Button) findViewById(R.id.button6);
+        imageView = (ImageView) findViewById(R.id.imageView);
+        mTabLayout = (LinearLayout) findViewById(R.id.mTabLayout);
+        mTabLayoutB = (LinearLayout) findViewById(R.id.mTabLayoutBottom);
+        listViewHeight = (LinearLayout) findViewById(R.id.listViewHeight);
+        listViewBottom = (LinearLayout) findViewById(R.id.listViewBottom);
+    }
+
+    @Override
+    public void onWindowFocusChanged(boolean hasFocus) {
+        super.onWindowFocusChanged(hasFocus);
+        int[] location = new int[2];
+        mTabLayout.getLocationOnScreen(location);
+        mTabOrigionLocation[0] = location[0];
+        mTabOrigionLocation[1] = location[1];
+        mTabLayoutB.getLocationOnScreen(location);
+        mTabOrigionLocation[2] = location[0];
+        mTabOrigionLocation[3] = location[1];
+        Log.e("OriginLocation", String.valueOf(mTabOrigionLocation[1]));
+
+        listViewHeight.getLocationOnScreen(location);
+        listViewLocation[0] = location[0];
+        listViewLocation[1] = location[1];
+        listViewBottom.getLocationOnScreen(location);
+        listViewLocation[2] = location[0];
+        listViewLocation[3] = location[1];
+
+//        ViewGroup.LayoutParams params = list.getLayoutParams();
+//        params.height = 400;
+//        list.setLayoutParams(params);
     }
 
     private void doUpdate(DataStruct data) {
@@ -76,28 +118,148 @@ public class MainActivity extends Activity {
     @Override
     protected void onStart() {
         super.onStart();
-        textView = (TextView) findViewById(R.id.editText);
-        editText2 = (EditText) findViewById(R.id.editText2);
-        final ListView list = (ListView) findViewById(R.id.listView);
-        button = (Button) findViewById(R.id.button2);
-        button1 = (Button) findViewById(R.id.button3);
-        button2 = (Button) findViewById(R.id.button4);
-        button3 = (Button) findViewById(R.id.button6);
-        imageView = (ImageView) findViewById(R.id.imageView);
         chatRoomAdapter = new ChatRoomAdapter(MainActivity.this, dataStruct);
         list.setAdapter(chatRoomAdapter);
 
+        list.setOnTouchListener(new View.OnTouchListener() {
+            float pastY;
+            float nowY;
+            boolean isDowntoUp = false;
+            HideActionBar hideActionBar;
+
+            @Override
+            public boolean onTouch(View v, MotionEvent event) {
+                switch (event.getAction()) {
+                    case MotionEvent.ACTION_DOWN:
+                        Log.e("Down", String.valueOf(event.getY()));
+                        pastY = event.getY();
+                    case MotionEvent.ACTION_MOVE:
+                        nowY = event.getY();
+                        ViewConfiguration vc = ViewConfiguration.get(MainActivity.this);
+                        int slop = vc.getScaledTouchSlop();
+//                        if(Math.abs(nowY - pastY) < slop)
+//                            return true;
+                        Log.e("Move", String.valueOf(event.getY()));
+                        if (pastY > nowY) {
+                            isDowntoUp = true;
+                        }
+                        if (nowY > pastY) {
+                            isDowntoUp = false;
+                        }
+                        if (nowY != pastY) {
+                            hideActionBar = new HideActionBar(isDowntoUp, (int) (nowY - pastY));
+                        }
+                        pastY = nowY;
+                        break;
+                    case MotionEvent.ACTION_UP:
+                        Log.e("Up", String.valueOf(event.getY()));
+                        int[] nowLoaction = new int[2];
+                        mTabLayoutB.getLocationOnScreen(nowLoaction);
+                        int viewHeight = mTabOrigionLocation[3] - mTabOrigionLocation[1];
+                        if (isDowntoUp) {
+                            if (nowLoaction[1] < mTabOrigionLocation[1] + viewHeight / 2) {
+                                mTabLayout.setTranslationY(-viewHeight);
+                                listViewHeight.setTranslationY(-viewHeight);
+                                int[] listNowLocation = new int[2];
+                                listViewHeight.getLocationOnScreen(listNowLocation);
+                                ViewGroup.LayoutParams params = list.getLayoutParams();
+                                params.height = listViewLocation[3] - listNowLocation[1] ;
+                                list.setLayoutParams(params);
+                                listViewHeight.setLayoutParams(params);
+                            } else {
+                                mTabLayout.setTranslationY(0);
+                                listViewHeight.setTranslationY(0);
+                            }
+
+                        } else {
+                            if (nowLoaction[1] > mTabOrigionLocation[1] + viewHeight / 2) {
+                                mTabLayout.setTranslationY(0);
+                                listViewHeight.setTranslationY(0);
+                            } else {
+                                mTabLayout.setTranslationY(-viewHeight);
+                                listViewHeight.setTranslationY(-viewHeight);
+
+                            }
+
+                        }
+                        pastY = 0;
+                        nowY = 0;
+                        break;
+                }
+                return false;
+            }
+
+            class HideActionBar{
+                int position;
+                boolean tag;
+                boolean mode = false;
+                public HideActionBar(boolean tag, int position){
+                    this.tag = tag;
+                    this.position = position;
+                    test();
+                };
+                public HideActionBar(boolean tag, boolean mode){
+                    this.tag = tag;
+                    this.mode = mode;
+                    test();
+                };
+                private void test() {
+                int move = 0;
+                int[] mTabNowLoaction = new int[2];
+                mTabLayout.getLocationOnScreen(mTabNowLoaction);
+                int[] listNowLocation = new int[2];
+                listViewHeight.getLocationOnScreen(listNowLocation);
+                int viewHeight = mTabOrigionLocation[3] - mTabOrigionLocation[1];
+//                Log.e("viewHeight", String.valueOf(viewHeight));
+                if (tag) {
+                    if (mTabNowLoaction[1] + viewHeight + position <= mTabOrigionLocation[1]) {
+                        move = -viewHeight;
+                    } else {
+                        move = mTabNowLoaction[1] - mTabOrigionLocation[1] + position;
+                    }
+                    mTabLayout.setTranslationY(move);
+                    listViewHeight.setTranslationY(move);
+                    ViewGroup.LayoutParams params = list.getLayoutParams();
+                    params.height = listViewLocation[3] - listNowLocation[1];
+                    list.setLayoutParams(params);
+                    listViewHeight.setLayoutParams(params);
+
+                    Log.e("nowLoaction[1]", String.valueOf(mTabNowLoaction[1]));
+                    Log.e("position", String.valueOf(position));
+                    Log.e("setLocation", String.valueOf(move));
+
+                } else {
+                    if (mTabNowLoaction[1] + position >= mTabOrigionLocation[1])
+                        move = 0;
+                    else {
+                        move = mTabNowLoaction[1] - mTabOrigionLocation[1] + position;
+                    }
+                    mTabLayout.setTranslationY(move);
+                    listViewHeight.setTranslationY(move);
+                }
+                }
+            }
+        });
+
         FirebaseDatabase database = FirebaseDatabase.getInstance(); // Initial Firebase service
         mRef = database.getReference("chat");                       // Read data from Table 'chat'
+        DataStruct[] data = new DataStruct[10];
+        for (int i = 0; i < data.length; i++) {
+            data[i] = new DataStruct();
+            data[i].message = String.valueOf(i);
+            data[i].name = String.valueOf(i);
+            data[i].messagePhoto = "";
+            dataStruct.add(data[i]);
+        }
         mRef.addValueEventListener(new ValueEventListener() {       // Listener datas' state in following case
             @Override
             public void onDataChange(DataSnapshot dataSnapshot) {
-                dataStruct.clear();
-                for (DataSnapshot message : dataSnapshot.getChildren()) {
-                    DataStruct data = message.getValue(DataStruct.class);
-                    dataStruct.add(data);
-                }
-                list.setSelection(chatRoomAdapter.getCount() - 1);
+//                dataStruct.clear();
+//                for (DataSnapshot message : dataSnapshot.getChildren()) {
+//                    DataStruct data = message.getValue(DataStruct.class);
+//                    dataStruct.add(data);
+//                }
+//                list.setSelection(chatRoomAdapter.getCount() - 1);
             }
 
             @Override
@@ -195,7 +357,7 @@ public class MainActivity extends Activity {
         super.onActivityResult(requestCode, resultCode, data);
         switch (requestCode) {
             case 0:
-                if(data != null) {
+                if (data != null) {
                     Uri select = data.getData();
                     FirebaseStorage storage = FirebaseStorage.getInstance();
                     storageRef = storage.getReferenceFromUrl("gs://chatroom-b8b0b.appspot.com");
@@ -242,7 +404,7 @@ public class MainActivity extends Activity {
                         }
                     });
                 }
-                    break;
+                break;
 
         }
     }
