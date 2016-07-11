@@ -10,7 +10,7 @@ import com.google.firebase.messaging.RemoteMessage;
  */
 public class MyFirebaseMessagingService extends FirebaseMessagingService {
     @Override
-    public void onMessageReceived(RemoteMessage remoteMessage) {        //When recevied message, and Activity still alive, will use 'onMessageReceived'
+    public void onMessageReceived(RemoteMessage remoteMessage) {        //When recevied message, and Activity stillDolist alive, will use 'onMessageReceived'
         super.onMessageReceived(remoteMessage);
         Log.e("FCM", "From: " + remoteMessage.getFrom());
         Log.e("FCM", "Notification Message Body: " + remoteMessage.getNotification().getBody());

@@ -11,7 +11,6 @@ import android.support.annotation.NonNull;
 import android.util.Log;
 import android.view.MotionEvent;
 import android.view.View;
-import android.view.ViewConfiguration;
 import android.view.ViewGroup;
 import android.widget.Button;
 import android.widget.EditText;
@@ -61,9 +60,10 @@ public class MainActivity extends Activity {
     private ArrayList<DataStruct> dataStruct = new ArrayList<DataStruct>();
     int[] mTabOrigionLocation = new int[4];
     private ListView list;
-    private LinearLayout listViewHeight;
-    private LinearLayout listViewBottom;
+    private LinearLayout listViewLayout;
+    private LinearLayout listViewLayoutB;
     private int[] listViewLocation = new int[4];
+    private LinearLayout control;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -79,8 +79,9 @@ public class MainActivity extends Activity {
         imageView = (ImageView) findViewById(R.id.imageView);
         mTabLayout = (LinearLayout) findViewById(R.id.mTabLayout);
         mTabLayoutB = (LinearLayout) findViewById(R.id.mTabLayoutBottom);
-        listViewHeight = (LinearLayout) findViewById(R.id.listViewHeight);
-        listViewBottom = (LinearLayout) findViewById(R.id.listViewBottom);
+        listViewLayout = (LinearLayout) findViewById(R.id.listViewLayout);
+        listViewLayoutB = (LinearLayout) findViewById(R.id.listViewLayoutBottom);
+        control = (LinearLayout) findViewById(R.id.control);
     }
 
     @Override
@@ -93,18 +94,14 @@ public class MainActivity extends Activity {
         mTabLayoutB.getLocationOnScreen(location);
         mTabOrigionLocation[2] = location[0];
         mTabOrigionLocation[3] = location[1];
-        Log.e("OriginLocation", String.valueOf(mTabOrigionLocation[1]));
 
-        listViewHeight.getLocationOnScreen(location);
+        listViewLayout.getLocationOnScreen(location);
         listViewLocation[0] = location[0];
         listViewLocation[1] = location[1];
-        listViewBottom.getLocationOnScreen(location);
+        listViewLayoutB.getLocationOnScreen(location);
         listViewLocation[2] = location[0];
         listViewLocation[3] = location[1];
 
-//        ViewGroup.LayoutParams params = list.getLayoutParams();
-//        params.height = 400;
-//        list.setLayoutParams(params);
     }
 
     private void doUpdate(DataStruct data) {
@@ -115,150 +112,167 @@ public class MainActivity extends Activity {
         mRef.push().setValue(map);
     }
 
+    float pastY;
+    float nowY = 0;
+    boolean isDowntoUp = false;
+    boolean Lock_UtD = true;
+    boolean Lock_DtU = false;
+    HideActionBar hideActionBar;
+    boolean doList = false;
+    boolean stillDolist = false;
+
+
+    @Override
+    public boolean dispatchTouchEvent(MotionEvent event) {
+        Log.e("TouchEvent Tourch", "");
+        switch (event.getAction()) {
+            case MotionEvent.ACTION_DOWN:
+                Log.e("LinearyLayout Tourch", "");
+                Log.e("Down", String.valueOf(event.getY()));
+                nowY = event.getY();
+                break;
+            case MotionEvent.ACTION_MOVE:
+                pastY = nowY;
+                nowY = event.getY();
+
+                Log.e("Move", String.valueOf(event.getY()));
+                if (pastY > nowY) {
+                    isDowntoUp = true;
+                }
+                if (nowY > pastY) {
+                    isDowntoUp = false;
+                }
+                if (Lock_DtU && isDowntoUp || Lock_UtD && !isDowntoUp) {
+                    doList = true;
+                    break;
+                }
+                if (nowY != pastY) {
+                    doList = false;
+                    stillDolist = false;
+                    hideActionBar = new HideActionBar(isDowntoUp, (int) (nowY - pastY));
+                    hideActionBar.start();
+                }
+                break;
+            case MotionEvent.ACTION_UP:
+                Log.e("Up", String.valueOf(event.getY()));
+                int[] nowLoaction = new int[2];
+                mTabLayoutB.getLocationOnScreen(nowLoaction);
+                int viewHeight = mTabOrigionLocation[3] - mTabOrigionLocation[1];
+                if (isDowntoUp) {
+                    if (nowLoaction[1] < mTabOrigionLocation[1] + viewHeight / 2) {
+                        hideActionBar = new HideActionBar(true);
+                    } else {
+                        hideActionBar = new HideActionBar(false);
+                        mTabLayout.setTranslationY(0);
+                    }
+
+                } else {
+                    if (nowLoaction[1] > mTabOrigionLocation[1] + viewHeight / 2) {
+                        hideActionBar = new HideActionBar(false);
+                    } else {
+                        hideActionBar = new HideActionBar(true);
+
+                    }
+
+                }
+                hideActionBar.start();
+                pastY = 0;
+                nowY = 0;
+                break;
+        }
+        if (stillDolist) {
+            return super.dispatchTouchEvent(event);
+        }
+        if (doList) {
+            stillDolist = true;
+            event.setAction(MotionEvent.ACTION_DOWN);
+            return super.dispatchTouchEvent(event);
+        } else {
+            return false;
+        }
+    }
+
+
+    class HideActionBar {
+        int position;
+        boolean isDowntoUp;
+        boolean mode = false;
+        boolean isPosition;
+
+        public HideActionBar(boolean isDowntoUp, int position) {
+            this.isDowntoUp = isDowntoUp;
+            this.position = position;
+            this.isPosition = true;
+        }
+
+        public HideActionBar(boolean mode) {
+            this.mode = mode;
+            this.isPosition = false;
+        }
+
+        private void start() {
+            int move = 0;
+            int[] mTabNowLoaction = new int[2];
+            mTabLayoutB.getLocationOnScreen(mTabNowLoaction);
+            int[] listNowLocation = new int[2];
+            listViewLayout.getLocationOnScreen(listNowLocation);
+            int mTabHeight = mTabOrigionLocation[3] - mTabOrigionLocation[1];
+
+            if (isDowntoUp && isPosition || mode && !isPosition) {
+                if (mTabNowLoaction[1] <= mTabOrigionLocation[1] && isPosition || !isPosition) {
+                    move = -mTabHeight;
+                    Lock_DtU = true;
+                    Lock_UtD = false;
+                } else {
+                    move = mTabNowLoaction[1] - mTabOrigionLocation[3] + position;
+                }
+
+                mTabLayout.setTranslationY(move);
+                listViewLayout.setTranslationY(move);
+
+                ViewGroup.LayoutParams params = list.getLayoutParams();
+                params.height = listViewLocation[3] - listViewLocation[1] - move;
+                list.setLayoutParams(params);
+                listViewLayout.setLayoutParams(params);
+
+                Log.e("nowLoaction[1]", String.valueOf(mTabNowLoaction[1]));
+                Log.e("position", String.valueOf(position));
+                Log.e("setLocation", String.valueOf(move));
+            } else {
+                if (mTabNowLoaction[1] >= mTabOrigionLocation[3] && isPosition || !isPosition) {
+                    move = 0;
+                    Lock_UtD = true;
+                    Lock_DtU = false;
+                } else {
+                    move = mTabNowLoaction[1] - mTabOrigionLocation[3] + position;
+                }
+
+                mTabLayout.setTranslationY(move);
+                listViewLayout.setTranslationY(move);
+
+                ViewGroup.LayoutParams params = list.getLayoutParams();
+                params.height = listViewLocation[3] - listNowLocation[1];
+                list.setLayoutParams(params);
+                listViewLayout.setLayoutParams(params);
+            }
+        }
+    }
+
     @Override
     protected void onStart() {
         super.onStart();
         chatRoomAdapter = new ChatRoomAdapter(MainActivity.this, dataStruct);
         list.setAdapter(chatRoomAdapter);
-
-        list.setOnTouchListener(new View.OnTouchListener() {
-            float pastY;
-            float nowY;
-            boolean isDowntoUp = false;
-            HideActionBar hideActionBar;
-
-            @Override
-            public boolean onTouch(View v, MotionEvent event) {
-                switch (event.getAction()) {
-                    case MotionEvent.ACTION_DOWN:
-                        Log.e("Down", String.valueOf(event.getY()));
-                        pastY = event.getY();
-                    case MotionEvent.ACTION_MOVE:
-                        nowY = event.getY();
-                        ViewConfiguration vc = ViewConfiguration.get(MainActivity.this);
-                        int slop = vc.getScaledTouchSlop();
-//                        if(Math.abs(nowY - pastY) < slop)
-//                            return true;
-                        Log.e("Move", String.valueOf(event.getY()));
-                        if (pastY > nowY) {
-                            isDowntoUp = true;
-                        }
-                        if (nowY > pastY) {
-                            isDowntoUp = false;
-                        }
-                        if (nowY != pastY) {
-                            hideActionBar = new HideActionBar(isDowntoUp, (int) (nowY - pastY));
-                        }
-                        pastY = nowY;
-                        break;
-                    case MotionEvent.ACTION_UP:
-                        Log.e("Up", String.valueOf(event.getY()));
-                        int[] nowLoaction = new int[2];
-                        mTabLayoutB.getLocationOnScreen(nowLoaction);
-                        int viewHeight = mTabOrigionLocation[3] - mTabOrigionLocation[1];
-                        if (isDowntoUp) {
-                            if (nowLoaction[1] < mTabOrigionLocation[1] + viewHeight / 2) {
-                                mTabLayout.setTranslationY(-viewHeight);
-                                listViewHeight.setTranslationY(-viewHeight);
-                                int[] listNowLocation = new int[2];
-                                listViewHeight.getLocationOnScreen(listNowLocation);
-                                ViewGroup.LayoutParams params = list.getLayoutParams();
-                                params.height = listViewLocation[3] - listNowLocation[1] ;
-                                list.setLayoutParams(params);
-                                listViewHeight.setLayoutParams(params);
-                            } else {
-                                mTabLayout.setTranslationY(0);
-                                listViewHeight.setTranslationY(0);
-                            }
-
-                        } else {
-                            if (nowLoaction[1] > mTabOrigionLocation[1] + viewHeight / 2) {
-                                mTabLayout.setTranslationY(0);
-                                listViewHeight.setTranslationY(0);
-                            } else {
-                                mTabLayout.setTranslationY(-viewHeight);
-                                listViewHeight.setTranslationY(-viewHeight);
-
-                            }
-
-                        }
-                        pastY = 0;
-                        nowY = 0;
-                        break;
-                }
-                return false;
-            }
-
-            class HideActionBar{
-                int position;
-                boolean tag;
-                boolean mode = false;
-                public HideActionBar(boolean tag, int position){
-                    this.tag = tag;
-                    this.position = position;
-                    test();
-                };
-                public HideActionBar(boolean tag, boolean mode){
-                    this.tag = tag;
-                    this.mode = mode;
-                    test();
-                };
-                private void test() {
-                int move = 0;
-                int[] mTabNowLoaction = new int[2];
-                mTabLayout.getLocationOnScreen(mTabNowLoaction);
-                int[] listNowLocation = new int[2];
-                listViewHeight.getLocationOnScreen(listNowLocation);
-                int viewHeight = mTabOrigionLocation[3] - mTabOrigionLocation[1];
-//                Log.e("viewHeight", String.valueOf(viewHeight));
-                if (tag) {
-                    if (mTabNowLoaction[1] + viewHeight + position <= mTabOrigionLocation[1]) {
-                        move = -viewHeight;
-                    } else {
-                        move = mTabNowLoaction[1] - mTabOrigionLocation[1] + position;
-                    }
-                    mTabLayout.setTranslationY(move);
-                    listViewHeight.setTranslationY(move);
-                    ViewGroup.LayoutParams params = list.getLayoutParams();
-                    params.height = listViewLocation[3] - listNowLocation[1];
-                    list.setLayoutParams(params);
-                    listViewHeight.setLayoutParams(params);
-
-                    Log.e("nowLoaction[1]", String.valueOf(mTabNowLoaction[1]));
-                    Log.e("position", String.valueOf(position));
-                    Log.e("setLocation", String.valueOf(move));
-
-                } else {
-                    if (mTabNowLoaction[1] + position >= mTabOrigionLocation[1])
-                        move = 0;
-                    else {
-                        move = mTabNowLoaction[1] - mTabOrigionLocation[1] + position;
-                    }
-                    mTabLayout.setTranslationY(move);
-                    listViewHeight.setTranslationY(move);
-                }
-                }
-            }
-        });
-
         FirebaseDatabase database = FirebaseDatabase.getInstance(); // Initial Firebase service
         mRef = database.getReference("chat");                       // Read data from Table 'chat'
-        DataStruct[] data = new DataStruct[10];
-        for (int i = 0; i < data.length; i++) {
-            data[i] = new DataStruct();
-            data[i].message = String.valueOf(i);
-            data[i].name = String.valueOf(i);
-            data[i].messagePhoto = "";
-            dataStruct.add(data[i]);
-        }
         mRef.addValueEventListener(new ValueEventListener() {       // Listener datas' state in following case
             @Override
             public void onDataChange(DataSnapshot dataSnapshot) {
-//                dataStruct.clear();
-//                for (DataSnapshot message : dataSnapshot.getChildren()) {
-//                    DataStruct data = message.getValue(DataStruct.class);
-//                    dataStruct.add(data);
-//                }
+                dataStruct.clear();
+                for (DataSnapshot message : dataSnapshot.getChildren()) {
+                    DataStruct data = message.getValue(DataStruct.class);
+                    dataStruct.add(data);
+                }
 //                list.setSelection(chatRoomAdapter.getCount() - 1);
             }
 

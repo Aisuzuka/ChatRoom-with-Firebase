@@ -22,17 +22,8 @@
             android:orientation="vertical"
             android:layout_width="match_parent"
             android:id="@+id/mTabLayout"
-            android:layout_height="wrap_content">
-
-            <EditText
-                android:layout_width="match_parent"
-                android:layout_height="20dp"
-                android:text="-****----------------------------"
-                android:id="@+id/editText8"
-                android:background="#843afb"
-                android:layout_alignParentEnd="false"
-                android:enabled="false"
-                android:alpha="100" />
+            android:layout_height="100dp"
+            android:background="#843afb">
 
             <LinearLayout
                 android:orientation="vertical"
@@ -44,7 +35,7 @@
         <LinearLayout
             android:orientation="vertical"
             android:layout_width="match_parent"
-            android:id="@+id/listViewHeight"
+            android:id="@+id/listViewLayout"
             android:layout_height="match_parent">
 
             <ListView
@@ -55,7 +46,7 @@
             <LinearLayout
                 android:orientation="vertical"
                 android:layout_width="match_parent"
-                android:id="@+id/listViewBottom"
+                android:id="@+id/listViewLayoutBottom"
                 android:layout_height="wrap_content" />
         </LinearLayout>
 
