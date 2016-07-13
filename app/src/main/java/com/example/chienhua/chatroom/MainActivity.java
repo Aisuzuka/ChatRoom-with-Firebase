@@ -26,7 +26,6 @@ import android.widget.ScrollView;
 import android.widget.TextView;
 
 
-import com.example.chienhua.chatroom.Tool.CustomScrollView;
 import com.example.chienhua.chatroom.Tool.ListViewInScroll;
 import com.google.android.gms.tasks.OnFailureListener;
 import com.google.android.gms.tasks.OnSuccessListener;
@@ -67,7 +66,7 @@ public class MainActivity extends ActionBarActivity {
     private ChatRoomAdapter chatRoomAdapter;
     private ArrayList<DataStruct> dataStruct = new ArrayList<DataStruct>();
     private ListViewInScroll list;
-    private CustomScrollView scroll;
+    private ScrollView scroll;
     private Toolbar toolBar;
     private LinearLayout toolBarHeader;
 
@@ -88,51 +87,51 @@ public class MainActivity extends ActionBarActivity {
         mRef.push().setValue(map);
     }
 
-    int pastY;
-    int dY;
-    private int mToolbarOffset = 0;
-    private int mToolbarHeight;
-    private boolean mControlsVisible = true;
-    @Override
-    public boolean dispatchTouchEvent(MotionEvent event) {
-
-        clipToolbarOffset();
-        onMoved(mToolbarOffset);
-        switch(event.getAction()){
-            case MotionEvent.ACTION_DOWN:
-                Log.e("pastY", String.valueOf(pastY));
-                pastY = (int) event.getY();
-                mToolbarOffset = 0;
-                break;
-            case MotionEvent.ACTION_MOVE:
-                dY = (int) (pastY - event.getY());
-                pastY = (int) event.getY();
-                if((mToolbarOffset <mToolbarHeight && dY>0) || (mToolbarOffset >0 && dY<0)) {
-//                    Log.e("mToolbarHeight", String.valueOf(mToolbarHeight));
-//                    Log.e("mToolbarOffset", String.valueOf(mToolbarOffset));
-//                    Log.e("dY", String.valueOf(dY));
-                    mToolbarOffset += dY;
-                }
-                break;
-            case MotionEvent.ACTION_UP:
-                dY = 0;
-                break;
-        }
-
-        return super.dispatchTouchEvent(event);
-    }
-
-    public void onMoved(int distance) {
-        toolBar.setTranslationY(-distance);
-    }
-
-    private void clipToolbarOffset() {
-        if(mToolbarOffset > mToolbarHeight) {
-            mToolbarOffset = mToolbarHeight;
-        } else if(mToolbarOffset < 0) {
-            mToolbarOffset = 0;
-        }
-    }
+//    int pastY;
+//    int dY;
+//    private int mToolbarOffset = 0;
+//    private int mToolbarHeight;
+//    private boolean mControlsVisible = true;
+//    @Override
+//    public boolean dispatchTouchEvent(MotionEvent event) {
+//
+//        clipToolbarOffset();
+//        onMoved(mToolbarOffset);
+//        switch(event.getAction()){
+//            case MotionEvent.ACTION_DOWN:
+//                Log.e("pastY", String.valueOf(pastY));
+//                pastY = (int) event.getY();
+//                mToolbarOffset = 0;
+//                break;
+//            case MotionEvent.ACTION_MOVE:
+//                dY = (int) (pastY - event.getY());
+//                pastY = (int) event.getY();
+//                if((mToolbarOffset <mToolbarHeight && dY>0) || (mToolbarOffset >0 && dY<0)) {
+////                    Log.e("mToolbarHeight", String.valueOf(mToolbarHeight));
+////                    Log.e("mToolbarOffset", String.valueOf(mToolbarOffset));
+////                    Log.e("dY", String.valueOf(dY));
+//                    mToolbarOffset += dY;
+//                }
+//                break;
+//            case MotionEvent.ACTION_UP:
+//                dY = 0;
+//                break;
+//        }
+//
+//        return super.dispatchTouchEvent(event);
+//    }
+//
+//    public void onMoved(int distance) {
+//        toolBar.setTranslationY(-distance);
+//    }
+//
+//    private void clipToolbarOffset() {
+//        if(mToolbarOffset > mToolbarHeight) {
+//            mToolbarOffset = mToolbarHeight;
+//        } else if(mToolbarOffset < 0) {
+//            mToolbarOffset = 0;
+//        }
+//    }
 
     @Override
     protected void onStart() {
@@ -145,28 +144,29 @@ public class MainActivity extends ActionBarActivity {
         button2 = (Button) findViewById(R.id.button4);
         button3 = (Button) findViewById(R.id.button6);
         imageView = (ImageView) findViewById(R.id.imageView);
-        scroll = (CustomScrollView) findViewById(R.id.scrollView);
+        scroll = (ScrollView) findViewById(R.id.scrollView);
         chatRoomAdapter = new ChatRoomAdapter(MainActivity.this, dataStruct);
         list.setAdapter(chatRoomAdapter);
         list.setEnabled(false);
         list.setFocusableInTouchMode(false);
 
-//        scroll.setOnTouchListener(new HidingScrollListener(this) {
-//            @Override
-//            public void onMoved(int distance) {
-//                toolBar.setTranslationY(-distance);
-//            }
-//
-//            @Override
-//            public void onShow() {
-//
-//            }
-//
-//            @Override
-//            public void onHide() {
-//
-//            }
-//        });
+        scroll.setOnTouchListener(new HidingScrollListener(this) {
+            @Override
+            public void onMoved(int distance) {
+                toolBar.setTranslationY(-distance);
+            }
+
+            @Override
+            public void onShow(int nowDistance, int distance) {
+                toolBar.setTranslationY(-distance);
+            }
+
+            @Override
+            public void onHide(int nowDistance, int distance) {
+                toolBar.setTranslationY(-distance);
+            }
+
+        });
 
         FirebaseDatabase database = FirebaseDatabase.getInstance(); // Initial Firebase service
         mRef = database.getReference("chat");                       // Read data from Table 'chat'
