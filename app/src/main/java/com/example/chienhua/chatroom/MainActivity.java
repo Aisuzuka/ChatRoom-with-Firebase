@@ -1,27 +1,21 @@
 package com.example.chienhua.chatroom;
 
-import android.app.Activity;
 import android.content.Intent;
-import android.database.Cursor;
+import android.content.res.TypedArray;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.net.Uri;
 import android.os.AsyncTask;
 import android.os.Bundle;
-import android.provider.MediaStore;
 import android.support.annotation.NonNull;
 import android.support.v7.app.ActionBarActivity;
 import android.support.v7.widget.Toolbar;
 import android.util.Log;
-import android.view.MotionEvent;
 import android.view.View;
-import android.view.ViewTreeObserver;
-import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
-import android.widget.ListView;
 import android.widget.ScrollView;
 import android.widget.TextView;
 
@@ -40,7 +34,6 @@ import com.google.firebase.storage.FirebaseStorage;
 import com.google.firebase.storage.StorageReference;
 import com.google.firebase.storage.UploadTask;
 
-import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.HttpURLConnection;
@@ -153,17 +146,30 @@ public class MainActivity extends ActionBarActivity {
         scroll.setOnTouchListener(new HidingScrollListener(this) {
             @Override
             public void onMoved(int distance) {
+                TypedArray styledAttributes = getTheme().obtainStyledAttributes(
+                        new int[]{R.attr.actionBarSize});
+                final int toolbarHeight = (int) styledAttributes.getDimension(0, 0);
+                styledAttributes.recycle();
+                final float alpha = (float)distance / (float)toolbarHeight;
+                runOnUiThread(new Runnable() {
+                    @Override
+                    public void run() {
+                        toolBar.getBackground().setAlpha((int) (255 - alpha * 255));
+                    }
+                });
                 toolBar.setTranslationY(-distance);
             }
 
             @Override
             public void onShow(int nowDistance, int distance) {
                 toolBar.setTranslationY(-distance);
+                toolBar.getBackground().setAlpha(255);
             }
 
             @Override
             public void onHide(int nowDistance, int distance) {
                 toolBar.setTranslationY(-distance);
+                toolBar.getBackground().setAlpha(0);
             }
 
         });
@@ -276,7 +282,7 @@ public class MainActivity extends ActionBarActivity {
         super.onActivityResult(requestCode, resultCode, data);
         switch (requestCode) {
             case 0:
-                if(data != null) {
+                if (data != null) {
                     Uri select = data.getData();
                     FirebaseStorage storage = FirebaseStorage.getInstance();
                     storageRef = storage.getReferenceFromUrl("gs://chatroom-b8b0b.appspot.com");
@@ -323,7 +329,7 @@ public class MainActivity extends ActionBarActivity {
                         }
                     });
                 }
-                    break;
+                break;
 
         }
     }
